@@ -271,7 +271,7 @@ function commonCatalogPrice(product) {
     else if (type.includes("flange")) factor = 1.25;
     else if (type.includes("wing")) factor = 2.15;
     else if (type.includes("coupling")) factor = 2.35;
-    else if (type.includes("castle")) factor = 2.00;
+    else if (type.includes("cap")) factor = 1.55;
   } else if (product.category === "washer") {
     if (type.includes("spring")) factor = 1.25;
     else if (type.includes("fender")) factor = 1.55;
@@ -285,8 +285,8 @@ function commonCatalogPrice(product) {
 function buildEgyptCommonCatalog() {
   const sizes = [4,5,6,8,10,12];
   const boltTypes = ["Hex Bolt","Socket Head Bolt","Carriage Bolt","Flange Bolt","Anchor Bolt"];
-  const screwTypes = ["Pan Head Screw","Countersunk Screw","Machine Screw","Self-Tapping Screw","Wood Screw"];
-  const nutTypes = ["Hex Nut","Nyloc Lock Nut","Flange Nut","Wing Nut","Coupling Nut","Castle Nut"];
+  const screwTypes = ["Pan Head Screw","Countersunk Screw","Machine Screw","Self-Tapping Screw","Button Head Screw"];
+  const nutTypes = ["Hex Nut","Nyloc Lock Nut","Flange Nut","Wing Nut","Coupling Nut","Cap Nut"];
   const washerTypes = ["Flat Washer","Spring Washer","Fender Washer","Lock Washer","Sealing Washer"];
   const core = [];
   for (const type of boltTypes) for (const size of sizes) for (const length of [20,25,30,40]) {
