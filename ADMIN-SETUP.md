@@ -6,6 +6,12 @@ Admin page: https://mjpdeflew-ship-it.github.io/3432/admin.html
 
 The dashboard already includes an **Add product** action, catalogue search and filters, product editing, availability toggles, deletion, order management, and store settings. Product changes are saved to Supabase and then appear on the storefront according to stock status.
 
+## Import 300 common products
+
+After signing in, open **Products** and choose **Import 300 common products**. This adds common metric hex/socket/carriage/flange/anchor bolts, pan/countersunk/machine/self-tapping/wood screws, several nut styles, and flat/spring/fender/lock/sealing washers in sizes M4, M5, M6, M8, M10, and M12. Where the material column is configured, 24 entries are stainless steel; otherwise the importer uses 300 steel entries. Existing matching products are skipped to avoid duplicates.
+
+The import prices are **starter estimates in EGP, not verified supplier quotations**. The importer asks for confirmation before making the entries visible as in-stock products. Confirm your own buying costs and selling prices, and verify actual stock, before accepting customer orders.
+
 ## One-time secure setup
 
 1. In the Supabase dashboard for this project, open **SQL Editor**.
