@@ -82,6 +82,17 @@ footer{border-top:1px solid var(--line);padding:22px 0;color:var(--mut);font-siz
 .filter-row-s .chip,.filter-row-l .chip{font-variant-numeric:tabular-nums}
 .fr:not(:first-child){border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent);padding-top:13px}
 .clr{margin-top:1px}
+
+/* Simple search first; optional filters stay tucked away until needed. */
+.catalog-search{display:flex;flex-direction:column;gap:5px}
+.catalog-search span{font-size:12px;font-weight:700;color:var(--mut)}
+.catalog-search input{width:100%;min-height:42px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit}
+.more-filters{border-top:1px solid var(--line);padding-top:10px}
+.more-filters summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:650;list-style-position:inside}
+.more-filters .fr{margin-top:10px}
+.it{padding:12px}
+.it svg{display:none}
+@media(max-width:560px){.catalog-search input{min-height:44px}.more-filters .fr{margin-top:12px}}
 </style>
 </head>
 <body>
@@ -90,13 +101,13 @@ footer{border-top:1px solid var(--line);padding:22px 0;color:var(--mut);font-siz
 <main class="w" id="catalog">
 <section class="hero">
 <h1 id="store-hero-title">Bolts, screws, nuts &amp; washers.</h1>
-<p id="store-hero-description">Metric M3 to M20. Buy a single piece or hundreds — you choose the quantity.</p>
-<div class="perks" id="store-perks"><span>Sold per piece</span><span>M3 – M20</span><span>Bulk quotes available</span></div>
+<p id="store-hero-description">Find the fastener you need. Browse products and order in EGP.</p>
+
 </section>
 <div class="bar" id="bar"></div>
 <div class="cnt" id="cnt"></div>
 <div class="list" id="grid"></div>
-<button class="more" id="more" data-k="more">Show more</button>
+<button class="more" id="more" data-k="more">Show more products</button>
 </main>
 <footer><div class="w">© <span id="footer-store-name">Club Bolts</span> · Metric fasteners, priced in EGP</div></footer>
 <div class="ov" id="ov" role="dialog" aria-modal="true" aria-label="Shopping Cart"><div class="drawer" id="dr"></div></div>
@@ -159,14 +170,13 @@ const resolvedName=normaliseStoreName(s.store_name);
 window.BH_SETTINGS={...s, store_name: resolvedName};
 applyStoreName(resolvedName);
 $("store-hero-title").textContent=s.hero_title||"Bolts, screws, nuts & washers.";
-$("store-hero-description").textContent=s.hero_description||"Metric M3 to M20. Buy a single piece or hundreds — you choose the quantity.";
+$("store-hero-description").textContent=s.hero_description||"Find the fastener you need. Browse products and order in EGP.";
 const perks=$("store-perks");
-perks.replaceChildren();
-[s.perk_one,s.perk_two,s.perk_three].filter(v=>typeof v==="string"&&v.trim()).forEach(label=>{const span=document.createElement("span");span.textContent=label;perks.appendChild(span)});
+if(perks){perks.replaceChildren();[s.perk_one,s.perk_two,s.perk_three].filter(v=>typeof v==="string"&&v.trim()).forEach(label=>{const span=document.createElement("span");span.textContent=label;perks.appendChild(span)});}
 }catch(e){/* Use built-in storefront defaults if settings are not configured yet. */}
 }
 
-let cart={},F={c:[],t:[],m:[],s:[],l:[]},shown=30;
+let cart={},F={c:[],t:[],m:[],s:[],l:[]},shown=30,searchTerm="";
 const HIERARCHY=["c","m","t","s","l"];
 const isActivated=k=>{
   const idx=HIERARCHY.indexOf(k);
@@ -242,17 +252,20 @@ function bar(){
     if(!options.length)return "";
     return `<div class="fr filter-row filter-row-${esc(k)}${active?"":" locked"}"><label>${esc(lab)}</label><div class="chips">${options.map(v=>`<button class="chip ${active&&F[k].includes(v)?"on":""}" ${active?`aria-pressed="${F[k].includes(v)?"true":"false"}"`:'disabled tabindex="-1"'} data-k="${esc(k)}" data-v="${esc(v)}">${esc(f?f(v):v)}</button>`).join("")}</div></div>`;
   };
-  const hasAnyFilter=HIERARCHY.some(k=>F[k].length>0);
-  $("bar").innerHTML=row("c","Category",cats,v=>v[0].toUpperCase()+v.slice(1)+"s")+
+  const hasAnyFilter=HIERARCHY.some(k=>F[k].length>0)||Boolean(searchTerm);
+  $("bar").innerHTML='<label class="catalog-search"><span>Search products</span><input id="product-search" type="search" value="'+esc(searchTerm)+'" placeholder="Search by product, size or material…" autocomplete="off"></label>'+
+  row("c","Category",cats,v=>v[0].toUpperCase()+v.slice(1)+"s")+
+  '<details id="more-filters" class="more-filters"><summary>More filters</summary>'+
   row("m","Material",materials,v=>v==="stainless_steel"?"Stainless steel":"Steel")+
   row("t","Type",types)+
   row("s","Size",sizes,v=>"M"+v)+
   row("l","Length",lengths,v=>v+" mm")+
+  '</details>'+
   (hasAnyFilter?'<button class="clr" data-k="clr">Clear filters</button>':"");
 }
 function grid(){
-const L=ITEMS.filter(i=>has(F.c,i.c)&&has(F.t,i.t)&&has(F.m,i.m)&&has(F.s,i.d)&&has(F.l,i.l));
-$("cnt").textContent=L.length+(L.length===1?" item":" items");
+const L=ITEMS.filter(i=>has(F.c,i.c)&&has(F.t,i.t)&&has(F.m,i.m)&&has(F.s,i.d)&&has(F.l,i.l)&&(!searchTerm||[i.t,i.c,i.m,i.d,i.l].join(" ").toLowerCase().includes(searchTerm.trim().toLowerCase())));
+$("cnt").textContent=L.length+(L.length===1?" product":" products");
 $("grid").innerHTML=L.slice(0,shown).map(i=>`<div class="it">${ic(i)}<div class="nm"><b>${esc(i.t)} M${esc(i.d)}${i.l?"×"+esc(i.l):""}</b><div class="meta">${i.m==="stainless_steel"?"Stainless steel":"Steel"} · Size M${esc(i.d)}${i.l?" · Length "+esc(i.l)+" mm":""}</div></div><div class="price">${fm(i.p)}<small>per piece</small></div><input class="qi" type="number" min="1" step="1" value="1" id="q${esc(i.id)}" aria-label="Quantity"><button class="add" data-a="${esc(i.id)}">Add</button></div>`).join("")||(LOADERR?'<div class="empty">The catalogue is not available right now. <a href="https://wa.me/'+esc(getWhatsapp().replace(/\D/g,""))+'?text='+encodeURIComponent("Hello " + getStoreName() + ", please send me the product catalogue.")+'" target="_blank" rel="noopener">Ask for the catalogue on WhatsApp</a>.</div>':'<div class="empty">No items match those filters.</div>');
 $("more").style.display=L.length>shown?"block":"none";
 }
@@ -277,7 +290,7 @@ if(e.target.id=="ov")$("ov").classList.remove("open");
 if(!b)return;
 const d=b.dataset;
 if(d.k=="clr"){
-  F={c:[],t:[],m:[],s:[],l:[]};shown=30;bar();grid();
+  F={c:[],t:[],m:[],s:[],l:[]};searchTerm="";shown=30;bar();grid();
 }else if(d.k=="more"){
   shown+=30;grid();
 }else if(d.k){
@@ -304,6 +317,7 @@ if(d.c=="place")placeOrder(b);
 document.addEventListener("keydown",e=>{
  if(e.key==="Escape"&&$("ov").classList.contains("open"))$("ov").classList.remove("open");
 });
+document.addEventListener("input",e=>{if(e.target.id==="product-search"){searchTerm=e.target.value;shown=30;grid();}});
 document.addEventListener("change",e=>{
 const id=e.target.dataset.qi;if(!id)return;
 const n=parseInt(e.target.value,10)||0;
