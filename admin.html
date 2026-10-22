@@ -225,12 +225,32 @@ tbody tr:hover{background:rgba(128,128,128,.025)}
 }
 
 .material-label{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:6px;padding:4px 7px;font-size:11px;font-weight:700;background:var(--bg);color:var(--ink)}
+
+/* Keep the owner workflow focused and usable on small screens. */
+.admin-nav{margin:12px 0 16px;padding:7px;border-radius:9px}
+.nav button{padding:8px 12px}
+.page-heading{margin-bottom:14px}
+.page-heading h1{font-size:clamp(25px,4vw,34px);margin-bottom:5px}
+.page-heading p{font-size:13px}
+.stats{gap:8px;margin-bottom:12px}
+.panel{border-radius:9px}
+.panel-head{padding:12px 14px}
+.panel-body{padding:12px}
+table{white-space:normal}
+th,td{padding:10px 12px}
+.product-name{font-size:13px}
+.product-sub{line-height:1.35;white-space:normal}
+.quick-grid{gap:8px;margin-bottom:12px}
+.quick-card{padding:10px;border-radius:9px}
+.setup-link{display:none}
+@media(max-width:560px){.panel-body{padding:9px}.panel-head{padding:11px}.toolbar{gap:7px}.toolbar .search{flex-basis:100%}td{padding:9px 8px}.actions{flex-wrap:wrap}.actions .btn{padding:6px 8px}.page-heading .btn{white-space:normal}}
+
 </style>
 </head>
 <body>
 <div id="root"><div class="loading-screen">Loading BoltHouse Admin…</div></div>
 <div id="modal-root" class="modal-root"></div>
 <script src="./config.js?v=20261022-2"></script>
-<script type="module" src="./admin.js?v=20261022-4"></script>
+<script type="module" src="./admin.js?v=20261022-5"></script>
 </body>
 </html>
