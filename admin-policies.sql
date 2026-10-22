@@ -187,3 +187,19 @@ BEGIN
     EXECUTE format('DROP POLICY %I ON public.orders', p.policyname);
   END LOOP;
 END $cleanup$;
+
+
+-- ONE-TIME ADMIN ACCOUNT SETUP
+-- 1. Create the owner account in Supabase Dashboard -> Authentication -> Users.
+-- 2. Replace the email below with that account's exact email and run this statement.
+--    It writes trusted app_metadata (not user-editable user_metadata), which is
+--    what admin.js and the RLS policies check.
+--
+-- UPDATE auth.users
+-- SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb)
+--     || '{"role":"admin"}'::jsonb
+-- WHERE lower(email) = lower('YOUR_ADMIN_EMAIL@example.com');
+--
+-- 3. Confirm the statement updated exactly one user, then sign out and sign back
+--    in at https://mjpdeflew-ship-it.github.io/3432/admin.html so the new JWT
+--    includes the admin role. Never put a service-role key in website files.
