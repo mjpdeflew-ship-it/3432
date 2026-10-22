@@ -245,6 +245,137 @@ function productKey(product) {
 function sameProductKey(a,b) {
   return a.category === b.category && a.type.trim().toLowerCase() === b.type.trim().toLowerCase() && Number(a.size) === Number(b.size) && (a.length == null ? null : Number(a.length)) === (b.length == null ? null : Number(b.length)) && (!state.materialSupported || (a.material || "steel") === (b.material || "steel"));
 }
+
+function commonCatalogPrice(product) {
+  const bases = {
+    bolt:   {4:0.80,5:1.00,6:1.35,8:2.50,10:4.20,12:6.50},
+    screw:  {4:0.35,5:0.45,6:0.65,8:1.10,10:1.80,12:2.60},
+    nut:    {4:0.30,5:0.40,6:0.55,8:0.90,10:1.55,12:2.40},
+    washer: {4:0.15,5:0.20,6:0.25,8:0.45,10:0.70,12:1.05}
+  };
+  let factor = 1;
+  const type = product.type.toLowerCase();
+  if (product.category === "bolt") {
+    if (type.includes("socket")) factor = 1.25;
+    else if (type.includes("carriage")) factor = 1.18;
+    else if (type.includes("flange")) factor = 1.15;
+    else if (type.includes("anchor")) factor = 1.75;
+    factor *= (Number(product.length) || 25) / 25;
+  } else if (product.category === "screw") {
+    if (type.includes("self-tapping")) factor = 1.12;
+    else if (type.includes("wood")) factor = 1.08;
+    else if (type.includes("countersunk")) factor = 1.05;
+    factor *= (Number(product.length) || 16) / 16;
+  } else if (product.category === "nut") {
+    if (type.includes("nyloc")) factor = 1.55;
+    else if (type.includes("flange")) factor = 1.25;
+    else if (type.includes("wing")) factor = 2.15;
+    else if (type.includes("coupling")) factor = 2.35;
+    else if (type.includes("castle")) factor = 2.00;
+  } else if (product.category === "washer") {
+    if (type.includes("spring")) factor = 1.25;
+    else if (type.includes("fender")) factor = 1.55;
+    else if (type.includes("lock")) factor = 1.15;
+    else if (type.includes("sealing")) factor = 2.10;
+  }
+  if (product.material === "stainless_steel") factor *= 2.15;
+  const base = (bases[product.category] || {})[product.size] || 1;
+  return Math.max(0.10, Math.round(base * factor * 100) / 100);
+}
+function buildEgyptCommonCatalog() {
+  const sizes = [4,5,6,8,10,12];
+  const boltTypes = ["Hex Bolt","Socket Head Bolt","Carriage Bolt","Flange Bolt","Anchor Bolt"];
+  const screwTypes = ["Pan Head Screw","Countersunk Screw","Machine Screw","Self-Tapping Screw","Wood Screw"];
+  const nutTypes = ["Hex Nut","Nyloc Lock Nut","Flange Nut","Wing Nut","Coupling Nut","Castle Nut"];
+  const washerTypes = ["Flat Washer","Spring Washer","Fender Washer","Lock Washer","Sealing Washer"];
+  const core = [];
+  for (const type of boltTypes) for (const size of sizes) for (const length of [20,25,30,40]) {
+    core.push({category:"bolt",type,size,length,material:"steel"});
+  }
+  for (const type of screwTypes) for (const size of sizes) for (const length of [12,16,20]) {
+    core.push({category:"screw",type,size,length,material:"steel"});
+  }
+  for (const type of nutTypes) for (const size of sizes) {
+    core.push({category:"nut",type,size,length:null,material:"steel"});
+  }
+  for (const type of washerTypes) for (const size of sizes) {
+    core.push({category:"washer",type,size,length:null,material:"steel"});
+  }
+  // 120 bolts + 90 screws + 36 nuts + 30 washers = 276 core SKUs.
+  const extraBolts = [];
+  for (const type of boltTypes) for (const size of sizes) {
+    extraBolts.push({category:"bolt",type,size,length:50,material:"steel"});
+  }
+  const extraScrews = [];
+  for (const type of screwTypes) for (const size of sizes) {
+    extraScrews.push({category:"screw",type,size,length:25,material:"steel"});
+  }
+  const steelOnlyCatalog = core.concat(extraBolts.slice(0,12),extraScrews.slice(0,12));
+  let products;
+  if (state.materialSupported) {
+    const stainlessCounts = {bolt:10,screw:6,nut:4,washer:4};
+    const stainless = [];
+    for (const category of Object.keys(stainlessCounts)) {
+      const rows = core.filter(product => product.category === category);
+      const count = stainlessCounts[category];
+      for (let i = 0; i < count; i++) {
+        const index = count === 1 ? 0 : Math.round(i * (rows.length - 1) / (count - 1));
+        stainless.push({...rows[index],material:"stainless_steel"});
+      }
+    }
+    products = core.concat(stainless);
+  } else {
+    products = steelOnlyCatalog;
+  }
+  return products.map(product => ({
+    ...product,
+    price: commonCatalogPrice(product),
+    in_stock: true
+  }));
+}
+async function importEgyptCommonCatalog(button) {
+  if (state.productError) {
+    setToast("Reload the product catalogue successfully before importing.");
+    return;
+  }
+  const catalog = buildEgyptCommonCatalog();
+  const fresh = catalog.filter(candidate => !state.products.some(existing => sameProductKey(existing,candidate)));
+  if (!fresh.length) {
+    setToast("The common catalogue is already present; no duplicates were added.");
+    return;
+  }
+  const estimatedPriceNote = "This imports up to 300 common metric fastener SKUs for the Egyptian market. EGP prices are starter estimates, not verified supplier quotations. Products will be marked in stock and shown to customers. Review prices and availability before taking real orders. Continue?";
+  if (!window.confirm(estimatedPriceNote)) return;
+  if (button) { button.disabled = true; button.textContent = "Importing catalogue…"; }
+  let inserted = 0;
+  try {
+    for (let offset = 0; offset < fresh.length; offset += 25) {
+      const batch = fresh.slice(offset, offset + 25).map(product => {
+        const row = {...product};
+        if (!state.materialSupported) delete row.material;
+        return row;
+      });
+      if (button) button.textContent = "Importing " + Math.min(offset + batch.length,fresh.length) + " / " + fresh.length + "…";
+      await api("products",{method:"POST",body:batch,prefer:"return=minimal"});
+      inserted += batch.length;
+    }
+    await loadProductsData();
+    if (state.route === "products") renderProducts(); else renderOverview();
+    setToast("Imported " + inserted + " products. Review the starter prices before accepting orders.");
+  } catch (error) {
+    console.error(error);
+    await loadProductsData();
+    if (state.route === "products") renderProducts(); else renderOverview();
+    setToast("Imported " + inserted + " before an error. Check admin permissions and refresh; completed batches are saved.");
+  } finally {
+    const currentButton = document.querySelector('[data-action="import-egypt-catalog"]');
+    if (currentButton) {
+      currentButton.disabled = false;
+      currentButton.textContent = "Import 300 common products";
+    }
+  }
+}
+
 function categoryLabel(value) {
   return ({bolt:"Bolts",screw:"Screws",nut:"Nuts",washer:"Washers"})[value] || pretty(value);
 }
@@ -263,11 +394,11 @@ function renderProducts() {
   const page = $("page");
   const categories = ["all","bolt","screw","nut","washer"];
   const materialOptions = '<option value="all"' + (state.productMaterial === "all" ? " selected" : "") + '>All materials</option><option value="steel"' + (state.productMaterial === "steel" ? " selected" : "") + '>Steel</option><option value="stainless_steel"' + (state.productMaterial === "stainless_steel" ? " selected" : "") + '>Stainless steel</option>';
-  page.innerHTML = pageHeading("Products","Add, edit, price, stock, or remove products in your catalogue.",'<button class="btn btn-primary" data-action="add-product">＋ Add product</button>') +
+  page.innerHTML = pageHeading("Products","Add, edit, price, stock, or remove products in your catalogue.",'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" data-action="add-product">＋ Add product</button><button class="btn btn-soft" data-action="import-egypt-catalog">Import 300 common products</button></div>') +
     errorBox(state.productError) +
     (!state.materialSupported ? '<div class="notice">The material column is not installed yet. Run the <a href="./admin-policies.sql" target="_blank" rel="noopener">database setup SQL</a> to activate Steel and Stainless steel controls. Existing products are temporarily treated as Steel.</div>' : '') +
     '<section class="panel"><div class="panel-head"><h2>Product catalogue</h2><button class="btn btn-soft btn-small" data-action="refresh">↻ Refresh</button></div><div class="panel-body"><div class="toolbar"><input class="search" id="product-search" value="' + esc(state.productSearch) + '" placeholder="Search name, material, size…" aria-label="Search products"><select class="category-filter" id="product-category" aria-label="Filter by category">' + categories.map(c => '<option value="' + c + '"' + (state.productCategory === c ? " selected" : "") + '>' + (c === "all" ? "All categories" : categoryLabel(c)) + '</option>').join("") + '</select><select class="category-filter" id="product-material" aria-label="Filter by material"' + (state.materialSupported ? "" : " disabled") + '>' + materialOptions + '</select><span class="results-count" id="product-count"></span></div><div id="product-results"></div></div></section>' +
-    '<div class="notice">Changes apply to the customer catalogue. Out-of-stock items remain visible here but are hidden from shoppers. Product material is stored in the database and used by the storefront filter.</div>';
+    '<div class="notice">Changes apply to the customer catalogue. Out-of-stock items remain visible here but are hidden from shoppers. Product material is stored in the database and used by the storefront filter. The common-catalogue import uses estimated EGP starter prices; confirm them with your supplier before accepting orders.</div>';
   renderProductResults();
 }
 function renderProductResults() {
@@ -534,6 +665,7 @@ document.addEventListener("click", async event => {
   if (action === "logout") { button.disabled = true; await signOut(); }
   else if (action === "refresh") await refreshCurrent();
   else if (action === "add-product") openProductForm(null);
+  else if (action === "import-egypt-catalog") await importEgyptCommonCatalog(button);
   else if (action === "edit-product") openProductForm(state.products[Number(button.dataset.index)]);
   else if (action === "delete-product") await deleteProduct(Number(button.dataset.index));
   else if (action === "close-modal") closeModal();
