@@ -253,7 +253,6 @@ function bar(){
     if(!options.length)return "";
     return `<div class="fr filter-row filter-row-${esc(k)}${active?"":" locked"}"><label>${esc(lab)}</label><div class="chips">${options.map(v=>`<button class="chip ${active&&F[k].includes(v)?"on":""}" ${active?`aria-pressed="${F[k].includes(v)?"true":"false"}"`:'disabled tabindex="-1"'} data-k="${esc(k)}" data-v="${esc(v)}">${esc(f?f(v):v)}</button>`).join("")}</div></div>`;
   };
-  const hasAnyFilter=HIERARCHY.some(k=>F[k].length>0)||Boolean(searchTerm);
   $("bar").innerHTML='<label class="catalog-search"><span>Search products</span><input id="product-search" type="search" value="'+esc(searchTerm)+'" placeholder="Search by product, size or material…" autocomplete="off"></label>'+
   row("c","Category",cats,v=>v[0].toUpperCase()+v.slice(1)+"s")+
   '<details id="more-filters" class="more-filters"><summary>More filters</summary>'+
