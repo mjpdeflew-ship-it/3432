@@ -37,10 +37,10 @@ function renderDenied() {
 }
 function renderShell() {
   const email = state.auth && state.auth.user && state.auth.user.email ? state.auth.user.email : "Administrator";
-  const nav = [{id:"overview",label:"Overview"},{id:"products",label:"Products"},{id:"orders",label:"Orders"},{id:"settings",label:"Settings"}];
+  const nav = [{id:"products",label:"Products"},{id:"orders",label:"Orders"},{id:"settings",label:"Settings"}];
   $("root").innerHTML = '<div class="admin-layout"><header class="shop-header"><div class="w shop-header-inner"><a class="store-brand" href="./index.html"><span>Bolt<b>House</b> 🔩</span><span class="admin-label">ADMIN</span></a><div class="top-actions"><span class="admin-email">' + esc(email) + '</span><a class="cartbtn" href="./index.html">View store ↗</a><button class="signout-btn" data-action="logout">Sign out</button></div></div></header><main class="w main"><nav class="admin-nav"><div class="nav">' +
     nav.map(item => '<button type="button" data-route="' + item.id + '" class="' + (item.id === state.route ? "active" : "") + '">' + item.label + '</button>').join("") +
-    '</div><a class="setup-link" href="./admin-policies.sql" target="_blank" rel="noopener">Database setup ↗</a></nav><div id="page" class="page"><div class="loading-screen">Loading dashboard…</div></div></main><footer class="admin-footer"><div class="w">© BoltHouse · Store management</div></footer></div>';
+    '</div></nav><div id="page" class="page"><div class="loading-screen">Loading dashboard…</div></div></main><footer class="admin-footer"><div class="w">© BoltHouse · Store management</div></footer></div>';
 }
 function setPageTitle(title) {
   const node = $("top-title");
@@ -50,9 +50,9 @@ function setPageTitle(title) {
 }
 async function startApp(auth) {
   state.auth = auth;
-  state.route = "overview";
+  state.route = "products";
   renderShell();
-  await navigate("overview");
+  await navigate("products");
 }
 async function start() {
   if (!CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY) {
@@ -234,7 +234,7 @@ function renderOverview() {
     '<section class="stat"><div class="stat-top"><span>In stock</span><span class="stat-icon">✓</span></div><div class="stat-value">' + (state.productError ? "—" : stockCount) + '</div><div class="stat-note">' + (state.productError ? "Stock unavailable" : outCount + " out of stock") + '</div></section>' +
     '<section class="stat"><div class="stat-top"><span>Total orders</span><span class="stat-icon">▤</span></div><div class="stat-value">' + (state.ordersError ? "—" : orders.length) + '</div><div class="stat-note">Orders recorded in the database</div></section>' +
     '<section class="stat"><div class="stat-top"><span>Order value</span><span class="stat-icon">EGP</span></div><div class="stat-value" style="font-size:clamp(20px,2.5vw,28px)">' + (state.ordersError ? "—" : money(orderValue)) + '</div><div class="stat-note">Combined total of recorded orders</div></section></div>' +
-    '<div class="quick-grid"><button class="quick-card" data-action="add-product"><span class="quick-icon">＋</span><span><span class="quick-title">Add a product</span><span class="quick-desc" style="display:block">Create a new catalogue item</span></span></button><button class="quick-card" data-route="orders"><span class="quick-icon">▤</span><span><span class="quick-title">Manage orders</span><span class="quick-desc" style="display:block">Review customer information and order status</span></span></button><button class="quick-card" data-route="settings"><span class="quick-icon">⚙</span><span><span class="quick-title">Store settings</span><span class="quick-desc" style="display:block">Update store name, homepage & WhatsApp</span></span></button></div>' +
+    '<div class="quick-grid"><button class="quick-card" data-action="add-product"><span class="quick-icon">＋</span><span><span class="quick-title">Add a product</span><span class="quick-desc" style="display:block">Add one product</span></span></button><button class="quick-card" data-route="orders"><span class="quick-icon">▤</span><span><span class="quick-title">View orders</span><span class="quick-desc" style="display:block">Find and update customer orders</span></span></button><button class="quick-card" data-route="settings"><span class="quick-icon">⚙</span><span><span class="quick-title">Store settings</span><span class="quick-desc" style="display:block">Change store details</span></span></button></div>' +
     '<section class="panel"><div class="panel-head"><h2>Recent orders</h2><button class="btn btn-soft btn-small" data-route="orders">View all orders →</button></div>' + (state.ordersError ? '<div class="panel-empty">Orders could not be loaded.</div>' : recentOrdersHtml(orders)) + '</section>' +
     '<p class="small muted" style="margin-top:16px">Manage catalogue details and orders here. Storefront products update from the shared database.</p>';
 }
@@ -371,7 +371,7 @@ async function importEgyptCommonCatalog(button) {
     const currentButton = document.querySelector('[data-action="import-egypt-catalog"]');
     if (currentButton) {
       currentButton.disabled = false;
-      currentButton.textContent = "Import 300 common products";
+      currentButton.textContent = "Add 300 common products";
     }
   }
 }
@@ -394,7 +394,7 @@ function renderProducts() {
   const page = $("page");
   const categories = ["all","bolt","screw","nut","washer"];
   const materialOptions = '<option value="all"' + (state.productMaterial === "all" ? " selected" : "") + '>All materials</option><option value="steel"' + (state.productMaterial === "steel" ? " selected" : "") + '>Steel</option><option value="stainless_steel"' + (state.productMaterial === "stainless_steel" ? " selected" : "") + '>Stainless steel</option>';
-  page.innerHTML = pageHeading("Products","Add, edit, price, stock, or remove products in your catalogue.",'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" data-action="add-product">＋ Add product</button><button class="btn btn-soft" data-action="import-egypt-catalog">Import 300 common products</button></div>') +
+  page.innerHTML = pageHeading("Products","Search products, change prices, and manage stock.",'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" data-action="add-product">＋ Add product</button><button class="btn btn-soft" data-action="import-egypt-catalog">Import 300 common products</button></div>') +
     errorBox(state.productError) +
     (!state.materialSupported ? '<div class="notice">The material column is not installed yet. Run the <a href="./admin-policies.sql" target="_blank" rel="noopener">database setup SQL</a> to activate Steel and Stainless steel controls. Existing products are temporarily treated as Steel.</div>' : '') +
     '<section class="panel"><div class="panel-head"><h2>Product catalogue</h2><button class="btn btn-soft btn-small" data-action="refresh">↻ Refresh</button></div><div class="panel-body"><div class="toolbar"><input class="search" id="product-search" value="' + esc(state.productSearch) + '" placeholder="Search name, material, size…" aria-label="Search products"><select class="category-filter" id="product-category" aria-label="Filter by category">' + categories.map(c => '<option value="' + c + '"' + (state.productCategory === c ? " selected" : "") + '>' + (c === "all" ? "All categories" : categoryLabel(c)) + '</option>').join("") + '</select><select class="category-filter" id="product-material" aria-label="Filter by material"' + (state.materialSupported ? "" : " disabled") + '>' + materialOptions + '</select><span class="results-count" id="product-count"></span></div><div id="product-results"></div></div></section>' +
@@ -415,11 +415,12 @@ function renderProductResults() {
     target.innerHTML = emptyState("◇",state.products.length ? "No matching products" : "No products yet",state.products.length ? "Try another search or category." : "Use Add product to create the first catalogue item.");
     return;
   }
-  target.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Product</th><th>Category</th><th>Material</th><th>Size</th><th>Length</th><th>Price / piece</th><th>Availability</th><th>Actions</th></tr></thead><tbody>' + rows.map(({product:p,index}) => {
-    const label = (p.type || p.category) + " M" + p.size;
+  target.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Product</th><th>Price / piece</th><th>Availability</th><th>Actions</th></tr></thead><tbody>' + rows.map(({product:p,index}) => {
+    const label = (p.type || p.category) + " M" + p.size + (p.length == null ? "" : " × " + p.length + " mm");
     const materialLabel = (p.material || "steel") === "stainless_steel" ? "Stainless steel" : "Steel";
-    return '<tr><td><div class="product-name">' + esc(label) + '</div><div class="product-sub">' + (p.length == null ? "No length" : esc(p.length + " mm")) + '</div></td><td>' + esc(categoryLabel(p.category)) + '</td><td><span class="material-label">' + esc(materialLabel) + '</span></td><td>M' + esc(p.size) + '</td><td>' + (p.length == null ? "—" : esc(p.length + " mm")) + '</td><td><strong>' + money(p.price) + '</strong></td><td><span class="badge ' + (p.in_stock ? "stock" : "out") + '">' + (p.in_stock ? "In stock" : "Out of stock") + '</span></td><td><div class="actions"><button class="btn btn-soft btn-small" data-action="edit-product" data-index="' + index + '">Edit</button><button class="btn btn-danger btn-small" data-action="delete-product" data-index="' + index + '">Delete</button></div></td></tr>';
-  }).join("") + '</tbody></table></div>';
+    const details = [categoryLabel(p.category), materialLabel, "M" + p.size, p.length == null ? "" : p.length + " mm"].filter(Boolean).join(" · ");
+    return '<tr><td><div class="product-name">' + esc(label) + '</div><div class="product-sub">' + esc(details) + '</div></td><td><strong>' + money(p.price) + '</strong></td><td><span class="badge ' + (p.in_stock ? "stock" : "out") + '">' + (p.in_stock ? "In stock" : "Out of stock") + '</span></td><td><div class="actions"><button class="btn btn-soft btn-small" data-action="edit-product" data-index="' + index + '">Edit</button><button class="btn btn-danger btn-small" data-action="delete-product" data-index="' + index + '">Delete</button></div></td></tr>';
+  }).join('') + '</tbody></table></div>';
 }
 function productTypeSuggestions(category) {
   const common = {
