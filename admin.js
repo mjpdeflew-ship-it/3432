@@ -418,7 +418,7 @@ function renderProductResults() {
   target.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Product</th><th>Price / piece</th><th>Availability</th><th>Actions</th></tr></thead><tbody>' + rows.map(({product:p,index}) => {
     const label = (p.type || p.category) + " M" + p.size + (p.length == null ? "" : " × " + p.length + " mm");
     const materialLabel = (p.material || "steel") === "stainless_steel" ? "Stainless steel" : "Steel";
-    const details = [categoryLabel(p.category), materialLabel, "M" + p.size, p.length == null ? "" : p.length + " mm"].filter(Boolean).join(" · ");
+    const details = [categoryLabel(p.category), materialLabel].join(" · ");
     return '<tr><td><div class="product-name">' + esc(label) + '</div><div class="product-sub">' + esc(details) + '</div></td><td><strong>' + money(p.price) + '</strong></td><td><span class="badge ' + (p.in_stock ? "stock" : "out") + '">' + (p.in_stock ? "In stock" : "Out of stock") + '</span></td><td><div class="actions"><button class="btn btn-soft btn-small" data-action="edit-product" data-index="' + index + '">Edit</button><button class="btn btn-danger btn-small" data-action="delete-product" data-index="' + index + '">Delete</button></div></td></tr>';
   }).join('') + '</tbody></table></div>';
 }
